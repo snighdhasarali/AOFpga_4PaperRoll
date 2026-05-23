@@ -1,265 +1,186 @@
-# Advent of Code 2025 – Day 4: Printing Department  
-## Hardware / RTL-Based Solution (Verilog)
+# Advent of Code 2025 – Day 4  
+## Printing Department (Verilog Hardware Implementation)
+
+<p align="center">
+  Hardware implementation of <b>Advent of Code 2025 - Day 4: Printing Department</b><br>
+  built using <b>Verilog</b> with both a golden reference model and a streaming FPGA-style architecture.
+</p>
 
 ---
 
-## 1. Introduction
+# 🚀 Interactive Visualization
 
-This repository contains a **hardware-oriented solution** to **Advent of Code 2025 – Day 4: Printing Department**.
-
-The original problem is presented as a grid-processing puzzle, but this submission intentionally approaches it from a **digital hardware and FPGA design perspective**, focusing on:
-
-- Correctness
-- Hardware realism
-- Parallelism
-- Scalability
-- Clear architectural reasoning
-
-Rather than only computing the final answer in software, this submission demonstrates **how the problem maps naturally to RTL hardware**, using Verilog, simulation, and waveform inspection.
+🌐 Live Demo & Explanation:  
+https://snighdhasarali.github.io/AOFpga_4PaperRoll/
 
 ---
 
-## 2. Problem Description (Restated Clearly)
+# 📖 Original Problem
 
-We are given a 2D grid consisting of:
-
-- `@` → paper roll  
-- `.` → empty space  
-
-A paper roll is considered **accessible** if:
-
-1. The cell itself contains `@`
-2. Among its **eight neighboring cells** (horizontal, vertical, and diagonal),
-   **fewer than four** also contain `@`
-
-The task is to **count how many paper rolls are accessible**.
-
-For the example grid given in the problem statement, the correct answer is:
-
+Full Advent of Code problem statement:  
+https://adventofcode.com/2025/day/4
 
 ---
 
-## 3. Hardware Design Philosophy
+# 🧩 Problem Summary (Simple Explanation)
 
-In real hardware development, it is standard practice to separate a design into two phases:
+The puzzle gives a large grid representing rolls of paper inside a printing department.
 
-1. **Correctness validation**  
-2. **Performance / architecture optimization**
+- `@` → Paper roll present
+- `.` → Empty space
 
-This submission follows that exact methodology.
+A forklift can only access a paper roll if it is **not surrounded by too many neighboring rolls**.
 
-### Why this matters
+For every paper roll, we check the **8 surrounding positions**:
 
-Jumping directly into a complex streaming or pipelined design without first proving correctness often leads to subtle bugs that are difficult to debug. Hardware engineers therefore rely on a **golden reference model** to validate logic before optimization.
+- top
+- bottom
+- left
+- right
+- 4 diagonal neighbors
 
-This project contains **two complementary implementations**:
+If there are **fewer than 4 neighboring paper rolls**, then that roll is considered **accessible**.
 
-| Implementation | Purpose |
-|---------------|--------|
-| Golden reference RTL | Proves correctness |
-| Streaming RTL | Demonstrates hardware architecture |
+The goal is to:
 
-Both solve the **same problem**, but serve **different goals**.
-
----
-
-## 4. Part 1 – Golden Reference Model (Correctness Proof)
-
-### 4.1 What the golden reference is
-
-The golden reference is a **simple, unoptimized RTL model** that:
-
-- Stores the entire grid in registers
-- Iterates over every cell
-- Explicitly checks all eight neighbors
-- Counts accessible paper rolls
-
-This model resembles a software solution, but is still written in Verilog so it can be simulated with standard RTL tools.
-
-### 4.2 Why the golden reference exists
-
-The golden reference provides:
-
-- Absolute confidence in correctness
-- A known-good expected result (`13`)
-- A baseline against which optimized designs can be compared
-
-In professional hardware development, this is standard practice and is often referred to as a **golden model**.
+> Count how many paper rolls are accessible by the forklift.
 
 ---
 
-### 4.3 How to run the golden reference
+# 📝 Example
 
-Navigate to the submission root directory and run:
+Input Grid:
 
-```bash
-iverilog reference/forklift_golden.v -o ref.out
-vvp ref.out
-Part 2 – Streaming RTL Architecture (Hardware-Oriented Design)
-5.1 Motivation for a streaming design
+```text
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+```
 
-While the golden reference is correct, it is not how real hardware would implement this problem.
+Accessible paper rolls are marked with `x`:
 
-In hardware systems such as FPGAs or ASICs:
+```text
+..xx.xx@x.
+x@@.@.@.@@
+@@@@@.x.@@
+@.@@@@..@.
+x@.@@@@.@x
+.@@@@@@@.@
+.@.@.@.@@@
+x.@@@.@@@@
+.@@@@@@@@.
+x.x.@@@.x.
+```
 
-Random access to large memories is expensive
+Final accessible count:
 
-Parallel computation is cheap
+```text
+13
+```
 
-Streaming data is preferred
+---
 
-This problem is a textbook example of a 2D stencil computation, which maps very well to a sliding window architecture.
+# ⚙️ Implementations
 
-5.2 High-level streaming architecture
+## 1️⃣ Golden Reference Model
 
-The streaming design processes the grid one cell per clock cycle using:
+A straightforward brute-force implementation.
 
-Three line buffers (previous rows)
+For every paper roll:
 
-A 3×3 sliding window
+- Check all 8 neighboring cells
+- Count neighboring paper rolls
+- If neighbor count `< 4`
+  - mark it accessible
 
-Parallel neighbor evaluation
+This model is mainly used for:
 
-A simple threshold comparison
+- verification
+- debugging
+- correctness checking
 
-Once the pipeline is filled, the design achieves constant throughput.
+---
 
-5.3 Key hardware concepts demonstrated
-5.3.1 Line buffers
+## 2️⃣ Streaming Hardware Architecture
 
-Only three rows of the grid are stored at any time:
+An optimized FPGA-style streaming design.
 
-Current row
+Instead of processing the full grid at once:
 
-Previous row
+- cells are streamed one-by-one
+- only 3 rows are buffered
+- neighbor counts are computed in real time
 
-Row before that
+This mimics efficient hardware image-processing pipelines commonly used in FPGA systems.
 
-This means memory usage scales with grid width, not total grid size.
+---
 
-5.3.2 Sliding 3×3 window
+# 💡 Hardware Insight
 
-As each new cell enters the pipeline, the surrounding 3×3 neighborhood becomes available automatically from the line buffers.
+The design treats the grid like a streaming image:
 
-No nested loops or random memory accesses are required.
+- one cell processed per clock cycle
+- nearby cells stored temporarily
+- accessibility calculated instantly
 
-5.3.3 Parallel neighbor counting
+This reduces:
 
-All eight neighbors are summed in parallel using combinational logic.
+- memory usage
+- latency
+- hardware complexity
 
-This is a key advantage of hardware over software:
-what takes multiple instructions on a CPU happens in a single cycle in hardware.
+while improving scalability for larger grids.
 
-5.3.4 One-cell-per-cycle throughput
+---
 
-After initial pipeline fill:
+# 🛠️ Technologies Used
 
-One grid cell is evaluated every clock cycle
+- Verilog HDL
+- FPGA Streaming Architecture
+- Sliding Window Neighbor Computation
 
-Latency is constant
+---
 
-Throughput does not depend on grid size
+# 📂 Files
 
-6. Streaming RTL Files
+| File | Description |
+|------|-------------|
+| `forklift_golden.v` | Brute-force golden reference model |
+| `forklift_streaming.v` | Streaming FPGA-style implementation |
+| `README.md` | Project documentation |
 
-The streaming implementation consists of:
+---
 
-streaming/forklift_streaming.v
-The RTL module implementing the streaming architecture
+# 🎯 Key Concepts
 
-streaming/tb_streaming.v
-A testbench that feeds the example grid and generates waveforms
+- 2D Neighbor Checking
+- Sliding Window Computation
+- Streaming Data Processing
+- FPGA-Oriented Design
+- Real-Time Grid Analysis
 
-7. Running the Streaming Simulation
+---
 
-From the submission root directory, run:
+# 📸 Visualization
 
-iverilog -g2012 streaming/forklift_streaming.v streaming/tb_streaming.v -o stream.out
-vvp stream.out
+The interactive webpage demonstrates:
 
+- neighbor checking
+- streaming architecture
+- accessibility decisions
+- real-time grid processing
 
-This generates a waveform file:
+🔗 https://snighdhasarali.github.io/AOFpga_4PaperRoll/
 
-waves/streaming.vcd
+---
 
-8. Waveform Visualization (GTKWave)
+# 📜 License
 
-To inspect the hardware behavior visually, open GTKWave:
-
-gtkwave waves/streaming.vcd
-
-8.1 Important signals to inspect
-
-Add the following signals in GTKWave:
-
-cell_in – input data stream
-
-center – center cell of the 3×3 window
-
-nsum – number of neighboring paper rolls
-
-accessible – accessibility decision signal
-
-row, col – grid position counters
-
-8.2 What the waveform proves
-
-The waveform clearly demonstrates:
-
-The 3×3 sliding window moving across the grid
-
-Neighbor counts computed in parallel
-
-Accessibility decisions occurring only when:
-
-The center cell is @
-
-Fewer than four neighbors are present
-
-A screenshot of this waveform is included as:
-
-waves/streaming_wave.png
-
-
-This serves as visual proof of correct hardware operation.
-
-9. Scalability Discussion
-Design	Memory Complexity
-Golden reference	O(W × H)
-Streaming RTL	O(W)
-
-Because the streaming design only stores line buffers, it scales naturally to:
-
-10× larger grids
-
-100× larger grids
-
-1000× larger grids (with BRAM on FPGA)
-
-Throughput remains one cell per cycle regardless of grid size.
-
-10. Tools Used
-
-Icarus Verilog – RTL simulation
-
-GTKWave – waveform visualization
-
-Ubuntu Linux – development environment
-
-All tools are open-source and commonly used in industry and academia.
-
-11. Summary
-
-This submission demonstrates:
-
-Correct problem understanding
-
-A disciplined hardware design workflow
-
-Separation of correctness and optimization
-
-A realistic FPGA-style streaming architecture
-
-Effective use of parallelism and pipelining
-
-The combination of a golden reference model and a streaming RTL implementation reflects real-world hardware engineering practice and aligns well with the goals of the Advent of FPGA challenge.
+This project is part of personal FPGA and hardware architecture exploration using Advent of Code style problems.
