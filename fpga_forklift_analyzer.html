@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPGA Forklift Accessibility Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0a0a0f;
+            --color-bg-card: rgba(20, 15, 35, 0.6);
+            --color-lavender: #c77dff;
+            --color-lavender-bright: #e0aaff;
+            --color-lavender-dark: #9d4edd;
+            --color-purple-neon: #bf00ff;
+            --color-cyan: #00f5ff;
+            --color-red: #ff006e;
+            --color-green: #00ff88;
+            --color-text: #e8e8f5;
+            --color-text-dim: #a0a0c0;
+            --font-display: 'Orbitron', monospace;
+            --font-mono: 'Share Tech Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-mono);
+            background: var(--color-bg);
+            color: var(--color-text);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--color-lavender);
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.4;
+            }
+            90% {
+                opacity: 0.4;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        /* Scanline effect */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            background: linear-gradient(
+                to bottom,
+                transparent 50%,
+                rgba(199, 125, 255, 0.02) 50%
+            );
+            background-size: 100% 4px;
+            animation: scan 8s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(157, 78, 221, 0.15) 0%, transparent 70%);
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--color-lavender-bright), var(--color-purple-neon));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(199, 125, 255, 0.8));
+            }
+            50% {
+                filter: drop-shadow(0 0 40px rgba(199, 125, 255, 1));
+            }
+        }
+
+        .hero h2 {
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            color: var(--color-text-dim);
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+
+        .hero-grid {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        .hero-grid::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--color-lavender) 1px, transparent 1px),
+                linear-gradient(90deg, var(--color-lavender) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid rgba(199, 125, 255, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(199, 125, 255, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--color-lavender);
+            box-shadow: 
+                0 12px 48px rgba(199, 125, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            color: var(--color-lavender-bright);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .card p {
+            line-height: 1.8;
+            color: var(--color-text-dim);
+            margin-bottom: 15px;
+        }
+
+        /* Grid Container */
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-template-rows: repeat(10, 50px);
+            gap: 4px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            border: 2px solid var(--color-lavender-dark);
+            box-shadow: 0 0 40px rgba(199, 125, 255, 0.3);
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid transparent;
+        }
+
+        .cell.blocked {
+            background: rgba(30, 20, 50, 0.8);
+            color: rgba(160, 160, 192, 0.3);
+        }
+
+        .cell.active {
+            background: linear-gradient(135deg, rgba(199, 125, 255, 0.4), rgba(157, 78, 221, 0.4));
+            color: var(--color-lavender-bright);
+            box-shadow: 
+                0 0 15px rgba(199, 125, 255, 0.5),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+
+        .cell.accessible {
+            background: linear-gradient(135deg, rgba(191, 0, 255, 0.8), rgba(224, 170, 255, 0.6));
+            color: #fff;
+            box-shadow: 
+                0 0 25px rgba(191, 0, 255, 0.8),
+                inset 0 0 15px rgba(255, 255, 255, 0.2);
+            border-color: var(--color-purple-neon);
+        }
+
+        .cell.inaccessible {
+            border-color: var(--color-red);
+            box-shadow: 0 0 15px rgba(255, 0, 110, 0.5);
+        }
+
+        .cell.processing {
+            animation: processPulse 0.8s ease-in-out infinite;
+            border-color: var(--color-cyan);
+            box-shadow: 0 0 30px var(--color-cyan);
+            z-index: 10;
+        }
+
+        .cell.neighbor {
+            border-color: var(--color-green);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        }
+
+        @keyframes processPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 30px var(--color-cyan);
+            }
+            50% {
+                transform: scale(1.15);
+                box-shadow: 0 0 50px var(--color-cyan);
+            }
+        }
+
+        .cell:hover {
+            transform: scale(1.1);
+            z-index: 5;
+        }
+
+        /* Control Panel */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 15px 40px;
+            border: 2px solid var(--color-lavender);
+            background: linear-gradient(135deg, rgba(199, 125, 255, 0.2), rgba(157, 78, 221, 0.2));
+            color: var(--color-lavender-bright);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(199, 125, 255, 0.3);
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, rgba(199, 125, 255, 0.4), rgba(157, 78, 221, 0.4));
+            box-shadow: 0 6px 25px rgba(199, 125, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--color-purple-neon), var(--color-lavender-dark));
+            border-color: var(--color-purple-neon);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(191, 0, 255, 0.5);
+        }
+
+        .btn.primary:hover {
+            box-shadow: 0 6px 30px rgba(191, 0, 255, 0.8);
+        }
+
+        /* Stats Panel */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--color-lavender-dark);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat:hover {
+            border-color: var(--color-lavender);
+            box-shadow: 0 0 20px rgba(199, 125, 255, 0.4);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--color-text-dim);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--color-lavender-bright), var(--color-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 20px;
+        }
+
+        .progress-label {
+            font-size: 0.9rem;
+            color: var(--color-text-dim);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--color-lavender-dark);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-purple-neon), var(--color-lavender-bright));
+            border-radius: 15px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.8);
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            border: 2px solid;
+        }
+
+        .legend-color.blocked {
+            background: rgba(30, 20, 50, 0.8);
+            border-color: rgba(160, 160, 192, 0.3);
+        }
+
+        .legend-color.active {
+            background: linear-gradient(135deg, rgba(199, 125, 255, 0.4), rgba(157, 78, 221, 0.4));
+            border-color: var(--color-lavender);
+        }
+
+        .legend-color.accessible {
+            background: linear-gradient(135deg, rgba(191, 0, 255, 0.8), rgba(224, 170, 255, 0.6));
+            border-color: var(--color-purple-neon);
+        }
+
+        .legend-color.inaccessible {
+            background: linear-gradient(135deg, rgba(199, 125, 255, 0.4), rgba(157, 78, 221, 0.4));
+            border-color: var(--color-red);
+        }
+
+        /* Comparison Section */
+        .comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .comparison-card {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--color-lavender-dark);
+            border-radius: 16px;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .comparison-card:hover {
+            border-color: var(--color-lavender);
+            box-shadow: 0 0 30px rgba(199, 125, 255, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .comparison-card h4 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--color-lavender-bright);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .comparison-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .comparison-card li {
+            padding: 10px 0;
+            padding-left: 25px;
+            position: relative;
+            color: var(--color-text-dim);
+            line-height: 1.6;
+        }
+
+        .comparison-card li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--color-lavender);
+            font-size: 1.2rem;
+        }
+
+        /* Tech Badges */
+        .tech-badges {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .badge {
+            font-family: var(--font-display);
+            padding: 12px 25px;
+            background: linear-gradient(135deg, rgba(199, 125, 255, 0.2), rgba(157, 78, 221, 0.2));
+            border: 2px solid var(--color-lavender-dark);
+            border-radius: 25px;
+            color: var(--color-lavender-bright);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            animation: badgeFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes badgeFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .badge:nth-child(1) { animation-delay: 0s; }
+        .badge:nth-child(2) { animation-delay: 0.2s; }
+        .badge:nth-child(3) { animation-delay: 0.4s; }
+        .badge:nth-child(4) { animation-delay: 0.6s; }
+        .badge:nth-child(5) { animation-delay: 0.8s; }
+        .badge:nth-child(6) { animation-delay: 1s; }
+
+        .badge:hover {
+            background: linear-gradient(135deg, rgba(191, 0, 255, 0.4), rgba(224, 170, 255, 0.4));
+            border-color: var(--color-purple-neon);
+            box-shadow: 0 0 20px rgba(191, 0, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        /* Status Messages */
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid var(--color-cyan);
+            border-radius: 8px;
+            color: var(--color-cyan);
+            font-family: var(--font-mono);
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .grid {
+                grid-template-columns: repeat(10, 35px);
+                grid-template-rows: repeat(10, 35px);
+                gap: 2px;
+            }
+
+            .cell {
+                width: 35px;
+                height: 35px;
+                font-size: 0.7rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="scanline"></div>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-grid"></div>
+            <h1>FPGA Forklift Accessibility Analyzer</h1>
+            <h2>Real-time neighborhood analysis using streaming Verilog architecture</h2>
+        </section>
+
+        <!-- Project Overview -->
+        <section class="card">
+            <h3>⚡ Project Overview</h3>
+            <p>
+                This project implements a hardware-accelerated warehouse grid analyzer using FPGA technology. 
+                Each processing cycle analyzes incoming cells in real-time to determine forklift accessibility 
+                based on neighborhood occupancy patterns.
+            </p>
+            <p>
+                <strong>Core Concepts:</strong> The system uses a streaming architecture that processes data 
+                sequentially without storing the full matrix in memory. A sliding window analyzes 3x3 neighborhoods 
+                using shift-register buffering, making it highly efficient for FPGA implementation.
+            </p>
+            <p>
+                <strong>Accessibility Rule:</strong> A cell is marked ACCESSIBLE when its value is 1 (active) 
+                AND it has fewer than 4 neighboring active cells. This ensures optimal forklift navigation paths 
+                with sufficient clearance.
+            </p>
+            
+            <div class="tech-badges">
+                <div class="badge">Verilog</div>
+                <div class="badge">FPGA</div>
+                <div class="badge">RTL Design</div>
+                <div class="badge">Streaming Arch</div>
+                <div class="badge">Hardware Accel</div>
+                <div class="badge">Digital Logic</div>
+            </div>
+        </section>
+
+        <!-- Interactive Grid -->
+        <section class="card">
+            <h3>🎯 Interactive Grid Visualization</h3>
+            <div class="grid-container">
+                <div id="grid" class="grid"></div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color blocked"></div>
+                        <span>Blocked (0)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color active"></div>
+                        <span>Active (1)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color accessible"></div>
+                        <span>Accessible</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color inaccessible"></div>
+                        <span>Inaccessible</span>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn primary" id="startStream">Start FPGA Stream</button>
+                    <button class="btn" id="stopStream">Stop Stream</button>
+                    <button class="btn" id="resetGrid">Reset Grid</button>
+                    <button class="btn" id="computeAccess">Compute Accessibility</button>
+                </div>
+
+                <div id="statusMessage"></div>
+            </div>
+
+            <!-- Stats Panel -->
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Current Row</div>
+                    <div class="stat-value" id="currentRow">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Current Col</div>
+                    <div class="stat-value" id="currentCol">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Neighbor Count</div>
+                    <div class="stat-value" id="neighborCount">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Hardware Cycles</div>
+                    <div class="stat-value" id="hardwareCycles">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Accessible Zones</div>
+                    <div class="stat-value" id="accessibleZones">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Processing Score</div>
+                    <div class="stat-value" id="processingScore">0</div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-label">FPGA Efficiency Meter</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Comparison Section -->
+        <section class="card">
+            <h3>⚙️ Architecture Comparison</h3>
+            <div class="comparison">
+                <div class="comparison-card">
+                    <h4>Golden Reference Model</h4>
+                    <ul>
+                        <li>Software-style full matrix processing</li>
+                        <li>Stores entire grid in memory</li>
+                        <li>Random access to all cells</li>
+                        <li>Simple implementation</li>
+                        <li>Higher memory requirements</li>
+                        <li>Used for verification</li>
+                    </ul>
+                </div>
+                <div class="comparison-card">
+                    <h4>Streaming FPGA Model</h4>
+                    <ul>
+                        <li>Hardware-efficient sequential processing</li>
+                        <li>Shift-register buffering (3 rows only)</li>
+                        <li>Sliding window neighborhood analysis</li>
+                        <li>Pipelined architecture</li>
+                        <li>Minimal memory footprint</li>
+                        <li>Real-time FPGA implementation</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <div style="text-align: center; margin: 60px 0 40px; color: var(--color-text-dim); font-size: 0.9rem;">
+            <p>FPGA Forklift Accessibility Analyzer | Verilog HDL | Hardware Acceleration</p>
+            <p style="margin-top: 10px;">Designed for real-time warehouse navigation analysis</p>
+        </div>
+    </div>
+
+    <script>
+        // Grid data
+        const gridData = [
+            [0,0,1,1,0,1,1,1,1,0],
+            [1,1,1,0,1,0,1,0,1,1],
+            [1,1,1,1,1,0,1,0,1,1],
+            [1,0,1,1,1,1,0,0,1,0],
+            [1,1,0,1,1,1,1,0,1,1],
+            [0,1,1,1,1,1,1,1,0,1],
+            [0,1,0,1,0,1,0,1,1,1],
+            [1,0,1,1,1,0,1,1,1,1],
+            [0,1,1,1,1,1,1,1,1,0],
+            [1,0,1,0,1,1,1,0,1,0]
+        ];
+
+        let currentGrid = JSON.parse(JSON.stringify(gridData));
+        let isStreaming = false;
+        let streamInterval = null;
+        let currentRow = 0;
+        let currentCol = 0;
+        let hardwareCycles = 0;
+        let accessibleZones = 0;
+
+        // Initialize grid
+        function initGrid() {
+            const gridContainer = document.getElementById('grid');
+            gridContainer.innerHTML = '';
+            
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 10; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.textContent = currentGrid[i][j];
+                    
+                    if (currentGrid[i][j] === 0) {
+                        cell.classList.add('blocked');
+                    } else {
+                        cell.classList.add('active');
+                    }
+                    
+                    cell.addEventListener('click', () => toggleCell(i, j));
+                    gridContainer.appendChild(cell);
+                }
+            }
+        }
+
+        // Toggle cell value
+        function toggleCell(row, col) {
+            if (isStreaming) return;
+            
+            currentGrid[row][col] = currentGrid[row][col] === 0 ? 1 : 0;
+            updateCell(row, col);
+            computeAccessibility();
+        }
+
+        // Update single cell
+        function updateCell(row, col) {
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            cell.textContent = currentGrid[row][col];
+            cell.className = 'cell';
+            
+            if (currentGrid[row][col] === 0) {
+                cell.classList.add('blocked');
+            } else {
+                cell.classList.add('active');
+            }
+        }
+
+        // Count neighbors
+        function countNeighbors(row, col) {
+            let count = 0;
+            const neighbors = [];
+            
+            for (let i = -1; i <= 1; i++) {
+                for (let j = -1; j <= 1; j++) {
+                    if (i === 0 && j === 0) continue;
+                    
+                    const newRow = row + i;
+                    const newCol = col + j;
+                    
+                    if (newRow >= 0 && newRow < 10 && newCol >= 0 && newCol < 10) {
+                        if (currentGrid[newRow][newCol] === 1) {
+                            count++;
+                            neighbors.push({row: newRow, col: newCol});
+                        }
+                    }
+                }
+            }
+            
+            return {count, neighbors};
+        }
+
+        // Compute accessibility for all cells
+        function computeAccessibility() {
+            accessibleZones = 0;
+            
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 10; j++) {
+                    const cell = document.querySelector(`.cell[data-row="${i}"][data-col="${j}"]`);
+                    cell.classList.remove('accessible', 'inaccessible');
+                    
+                    if (currentGrid[i][j] === 1) {
+                        const {count} = countNeighbors(i, j);
+                        
+                        if (count < 4) {
+                            cell.classList.add('accessible');
+                            accessibleZones++;
+                        } else {
+                            cell.classList.add('inaccessible');
+                        }
+                    }
+                }
+            }
+            
+            updateStats();
+        }
+
+        // Start streaming simulation
+        function startStream() {
+            if (isStreaming) return;
+            
+            isStreaming = true;
+            currentRow = 0;
+            currentCol = 0;
+            hardwareCycles = 0;
+            
+            showStatus('FPGA streaming started...');
+            
+            streamInterval = setInterval(() => {
+                processCell(currentRow, currentCol);
+                
+                currentCol++;
+                if (currentCol >= 10) {
+                    currentCol = 0;
+                    currentRow++;
+                }
+                
+                if (currentRow >= 10) {
+                    stopStream();
+                    showStatus('FPGA streaming complete!');
+                    computeAccessibility();
+                }
+                
+                hardwareCycles++;
+                updateStats();
+            }, 150);
+        }
+
+        // Process single cell (streaming)
+        function processCell(row, col) {
+            // Clear previous processing highlights
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('processing', 'neighbor');
+            });
+            
+            const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+            cell.classList.add('processing');
+            
+            if (currentGrid[row][col] === 1) {
+                const {count, neighbors} = countNeighbors(row, col);
+                
+                // Highlight neighbors
+                neighbors.forEach(n => {
+                    const neighborCell = document.querySelector(`.cell[data-row="${n.row}"][data-col="${n.col}"]`);
+                    neighborCell.classList.add('neighbor');
+                });
+                
+                document.getElementById('neighborCount').textContent = count;
+                
+                // Mark accessibility
+                setTimeout(() => {
+                    cell.classList.remove('accessible', 'inaccessible');
+                    if (count < 4) {
+                        cell.classList.add('accessible');
+                    } else {
+                        cell.classList.add('inaccessible');
+                    }
+                }, 100);
+            } else {
+                document.getElementById('neighborCount').textContent = 0;
+            }
+        }
+
+        // Stop streaming
+        function stopStream() {
+            if (streamInterval) {
+                clearInterval(streamInterval);
+                streamInterval = null;
+            }
+            isStreaming = false;
+            
+            // Clear processing highlights
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('processing', 'neighbor');
+            });
+        }
+
+        // Reset grid
+        function resetGrid() {
+            stopStream();
+            currentGrid = JSON.parse(JSON.stringify(gridData));
+            currentRow = 0;
+            currentCol = 0;
+            hardwareCycles = 0;
+            accessibleZones = 0;
+            
+            initGrid();
+            computeAccessibility();
+            showStatus('Grid reset to initial state');
+        }
+
+        // Update stats
+        function updateStats() {
+            document.getElementById('currentRow').textContent = currentRow;
+            document.getElementById('currentCol').textContent = currentCol;
+            document.getElementById('hardwareCycles').textContent = hardwareCycles;
+            document.getElementById('accessibleZones').textContent = accessibleZones;
+            
+            const score = Math.min(100, Math.floor((hardwareCycles / 100) * 100));
+            document.getElementById('processingScore').textContent = score;
+            
+            const progress = Math.min(100, (hardwareCycles / 100) * 100);
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        // Show status message
+        function showStatus(message) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.innerHTML = `<div class="status-message">${message}</div>`;
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 3000);
+        }
+
+        // Event listeners
+        document.getElementById('startStream').addEventListener('click', startStream);
+        document.getElementById('stopStream').addEventListener('click', stopStream);
+        document.getElementById('resetGrid').addEventListener('click', resetGrid);
+        document.getElementById('computeAccess').addEventListener('click', () => {
+            computeAccessibility();
+            showStatus('Accessibility recomputed');
+        });
+
+        // Create particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 5 + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Initialize
+        createParticles();
+        initGrid();
+        computeAccessibility();
+    </script>
+</body>
+</html>
